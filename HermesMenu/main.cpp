@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include <xtl.h>
 #include <string>
+#include <math.h>
+#include <stdlib.h>
 
 #include "audioPlayer.h"
 #include "component.h"
@@ -269,6 +271,98 @@ void render_logo(float angle1, float angle2, float angle3, utils::dataContainer*
     }
 }
 
+void render_starfield()
+{
+    static float time = 0.0f;
+    time += 0.5f;
+    if (time > 10000.0f) time = 0.0f;
+
+    const int numStars = 200;
+    static float starX[200];
+    static float starY[200];
+    static float starZ[200];
+    static bool initialized = false;
+    
+    // Initialize stars on first call
+    if (!initialized) {
+        for (int i = 0; i < numStars; i++) {
+            starX[i] = ((float)(rand() % context::getBufferWidth()) - context::getBufferWidth() / 2.0f) / (context::getBufferWidth() / 2.0f);
+            starY[i] = ((float)(rand() % context::getBufferHeight()) - context::getBufferHeight() / 2.0f) / (context::getBufferHeight() / 2.0f);
+            starZ[i] = (float)(rand() % 1000) / 1000.0f;
+        }
+        initialized = true;
+    }
+
+    // Setup rendering state
+    context::getD3dDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    context::getD3dDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+    context::getD3dDevice()->SetTexture(0, NULL);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG2);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+
+    float centerX = context::getBufferWidth() / 2.0f;
+    float centerY = context::getBufferHeight() / 2.0f;
+    float speed = 0.02f;
+
+    for (int i = 0; i < numStars; i++) {
+        // Move star toward camera
+        starZ[i] -= speed;
+        
+        // Reset star if it goes behind camera
+        if (starZ[i] <= 0.0f) {
+            starZ[i] = 1.0f;
+            starX[i] = ((float)(rand() % context::getBufferWidth()) - context::getBufferWidth() / 2.0f) / (context::getBufferWidth() / 2.0f);
+            starY[i] = ((float)(rand() % context::getBufferHeight()) - context::getBufferHeight() / 2.0f) / (context::getBufferHeight() / 2.0f);
+        }
+        
+        // Project 3D star to 2D screen
+        float scale = 1.0f / (starZ[i] + 0.1f);
+        float screenX = centerX + starX[i] * centerX * scale;
+        float screenY = centerY + starY[i] * centerY * scale;
+        
+        // Calculate star size and brightness based on distance
+        float starSize = 2.0f * scale;
+        if (starSize < 1.0f) starSize = 1.0f;
+        if (starSize > 4.0f) starSize = 4.0f;
+        
+        // Retro colors - brighter stars are more colorful
+        uint32_t starColor;
+        float brightness = 1.0f - starZ[i];
+        if (brightness > 0.7f) {
+            starColor = 0xFFFFFFFF; // White for close stars
+        } else if (brightness > 0.4f) {
+            starColor = 0xFF00FFFF; // Cyan
+        } else {
+            starColor = 0xFF0080FF; // Blue
+        }
+        
+        // Draw star as a small quad
+        context::getD3dDevice()->SetRenderState(D3DRS_TEXTUREFACTOR, starColor);
+        utils::dataContainer* starVertices = meshUtility::createQuadXY(
+            math::vec3F(screenX - starSize / 2.0f, (float)context::getBufferHeight() - (screenY + starSize / 2.0f), 0.0f),
+            math::sizeF(starSize, starSize),
+            math::rectF(0.0f, 0.0f, 1.0f, 1.0f)
+        );
+        context::getD3dDevice()->DrawPrimitiveUP(
+            D3DPT_TRIANGLELIST,
+            (starVertices->size / sizeof(meshUtility::vertex)) / 3,
+            starVertices->data,
+            sizeof(meshUtility::vertex)
+        );
+        delete starVertices;
+    }
+    
+    // Restore texture stage state
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+}
+
 void __cdecl main()
 {
 	utils::debugPrint("Welcome to Cerbios Recovery\n");
@@ -330,6 +424,9 @@ void __cdecl main()
         context::getD3dDevice()->SetTransform(D3DTS_PROJECTION, &matProjection);
         context::getD3dDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
         context::getD3dDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+
+        // Render Retro Starfield Effect
+        render_starfield();
 
         // Process Input / Render Menu
 
