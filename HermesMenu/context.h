@@ -3,10 +3,10 @@
 #include "inputManager.h"
 #include "math.h"
 #include "utils.h"
-#include "pointerMap.h"
-#include "xboxInternals.h"
+#include "External.h"
 
 #include <string>
+#include <map>
 
 typedef struct image
 {
@@ -24,14 +24,13 @@ typedef struct image
 
 typedef struct bitmapFont
 {
-	pointerMap<math::rectI*>* charMap;
+    std::map<std::string, math::rectI> charMap;
 	image* image;
 	int lineHeight;
 	int spacing;
 
 	~bitmapFont()
 	{
-		delete(charMap);
 		delete(image);
 	}
 
@@ -50,11 +49,8 @@ public:
 	static int32_t getBufferPitch();
 	static void setBuffer(int32_t* buffer);
 	static int32_t* getBuffer();
-	static void setImageMap(pointerMap<image*>* imageMap);
-	static pointerMap<image*>* getImageMap();
+	static std::map<std::string, image*>* getImageMap();
 	static inputManager* getInputManager();
-    static void setBitmapFontExtraSmall(bitmapFont* font);
-	static bitmapFont* getBitmapFontExtraSmall();
 	static void setBitmapFontSmall(bitmapFont* font);
 	static bitmapFont* getBitmapFontSmall();
 	static void setBitmapFontMedium(bitmapFont* font);

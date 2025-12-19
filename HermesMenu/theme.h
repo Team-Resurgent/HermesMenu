@@ -1,8 +1,7 @@
 #pragma once
 
-#include "xboxInternals.h"
+#include "External.h"
 #include "alignment.h"
-#include "pointerVector.h"
 
 #define THEME_BACKGROUND_COLOR 0xff11191f
 #define THEME_BACKGROUND_IMAGE_TINT 0xffffffff
@@ -28,24 +27,21 @@
 #define THEME_JOY_BUTTON_BLACK_COLOR 0xff666666
 #define THEME_JOY_BUTTON_WHITE_COLOR 0xffffffff
 
-#define THEME_BUTTON_ACTIVE_FILL_COLOR 0x80175782
+#define THEME_BUTTON_ACTIVE_FILL_COLOR 0xc0825782
 #define THEME_BUTTON_ACTIVE_STROKE_COLOR 0x80ffffff
 #define THEME_BUTTON_ACTIVE_TEXT_COLOR 0xffffffff
 
-#define THEME_BUTTON_ACTIVE_HOVER_FILL_COLOR 0x8019b3e6
+#define THEME_BUTTON_ACTIVE_HOVER_FILL_COLOR 0xc0e6b3e6
 #define THEME_BUTTON_ACTIVE_HOVER_STROKE_COLOR 0x80ffffff
 #define THEME_BUTTON_ACTIVE_HOVER_TEXT_COLOR 0xffffffff
 
-#define THEME_BUTTON_INACTIVE_FILL_COLOR 0x80175782
+#define THEME_BUTTON_INACTIVE_FILL_COLOR 0xc0825782
 #define THEME_BUTTON_INACTIVE_STROKE_COLOR 0x80000000
 #define THEME_BUTTON_INACTIVE_TEXT_COLOR 0xffffffff
 
-#define THEME_BUTTON_INACTIVE_HOVER_FILL_COLOR 0x8019b3e6
+#define THEME_BUTTON_INACTIVE_HOVER_FILL_COLOR 0xc0e6b3e6
 #define THEME_BUTTON_INACTIVE_HOVER_STROKE_COLOR 0x80000000
 #define THEME_BUTTON_INACTIVE_HOVER_TEXT_COLOR 0xffffffff
-
-#define THEME_PANEL_FILL_COLOR 0x00000000
-#define THEME_PANEL_STROKE_COLOR 0x00000000
 
 #define THEME_TEXT_PANEL_FILL_COLOR 0xff11191f
 #define THEME_TEXT_PANEL_STROKE_COLOR 0xff374956
@@ -100,9 +96,6 @@ public:
 		uint32_t BUTTON_INACTIVE_HOVER_STROKE_COLOR;
 		uint32_t BUTTON_INACTIVE_HOVER_TEXT_COLOR;
 
-		uint32_t PANEL_FILL_COLOR;
-		uint32_t PANEL_STROKE_COLOR;
-
 		uint32_t TEXT_PANEL_FILL_COLOR;
 		uint32_t TEXT_PANEL_STROKE_COLOR;
 		uint32_t TEXT_PANEL_TEXT_COLOR;
@@ -154,9 +147,6 @@ public:
 	static uint32_t getButtonInactiveHoverFillColor();
 	static uint32_t getButtonInactiveHoverStrokeColor();
 	static uint32_t getButtonInactiveHoverTextColor();
-
-	static uint32_t getPanelFillColor();
-	static uint32_t getPanelStrokeColor();
 
 	static uint32_t getTextPanelFillColor();
 	static uint32_t getTextPanelStrokeColor();

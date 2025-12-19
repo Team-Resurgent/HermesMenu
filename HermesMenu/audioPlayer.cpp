@@ -1,7 +1,5 @@
 #include "audioPlayer.h"
 #include "stringUtility.h"
-#include "fileSystem.h"
-#include "pointerMap.h"
 #include "context.h"
 #include "utils.h"
 #include "Assets\music_ogg.h"

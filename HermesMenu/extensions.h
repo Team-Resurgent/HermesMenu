@@ -1,6 +1,6 @@
 #pragma once
 
-char* strtok_r(char* str, const char* delimiters, char** saveptr) 
+char* strtok_r(char* str, std::string delimiters, char** saveptr) 
 {
     char* token;
 

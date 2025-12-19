@@ -2,14 +2,12 @@
 #include "audioPlayer.h"
 #include "stringUtility.h"
 #include "irRemote.h"
-#include "Scenes/sceneManager.h"
 
 namespace
 {
 	bool mInitialized = false;
 	HANDLE mControllerHandles[XGetPortCount()];
     HANDLE mRemoteHandles[XGetPortCount()];
-	CHAR mMemoryUnityHandles[XGetPortCount() * 2];
     BYTE mRemoteStatesPrevious[XGetPortCount()];
     BYTE mRemoteStatesCurrent[XGetPortCount()];
 	JoystickButtonStates mControllerStatesPrevious[XGetPortCount()];
@@ -40,10 +38,6 @@ void inputManager::processController()
 			memset(&mControllerStatesCurrent[i], 0, sizeof(JoystickButtonStates));
 			mTriggerLeftPressure[i] = 0;
 			mTriggerRightPressure[i] = 0;
-		}
-		for (int i = 0; i < XGetPortCount() * 2; i++)
-		{
-			mMemoryUnityHandles[i] = 0;
 		}
 	}
 
@@ -82,50 +76,6 @@ void inputManager::processController()
 			}
 			insertions = insertions >> 1;
 			removals = removals >> 1;
-		}
-	}
-
-	if(XGetDeviceChanges(XDEVICE_TYPE_MEMORY_UNIT, &insertions, &removals) == TRUE)
-    {
-		for (uint32_t iPort = 0; iPort < XGetPortCount(); iPort++)
-		{
-			for (uint32_t iSlot = 0; iSlot < 2; iSlot++ )
-			{
-				uint32_t mask = iPort + (iSlot ? 16 : 0);
-				mask = 1 << mask;
-
-				uint32_t index = (iPort * 2) + iSlot;
-				if ((mask & removals) != 0 && mMemoryUnityHandles[index] != 0)
-                {
-					char* mountPoint = stringUtility::formatString("\\??\\%c:", 'H' + index);
-					STRING sMountPoint = {(USHORT)strlen(mountPoint), (USHORT)strlen(mountPoint) + 1, mountPoint};
-
-					DEVICE_OBJECT* device = MU_GetExistingDeviceObject(iPort, iSlot);
-					IoDismountVolume(device);
-
-					IoDeleteSymbolicLink(&sMountPoint);
-					free(mountPoint);
-					MU_CloseDeviceObject(iPort, iSlot);
-                    mMemoryUnityHandles[index] = 0;
-                }
-
-				if ((mask & insertions) != 0 && mMemoryUnityHandles[index] == 0)
-                {
-					char szDeviceName[64];
-					STRING DeviceName;
-					DeviceName.Length = 0;
-					DeviceName.MaximumLength = sizeof(szDeviceName) / sizeof(CHAR) - 2;
-					DeviceName.Buffer = szDeviceName;
-					if (MU_CreateDeviceObject(iPort, iSlot, &DeviceName) >= 0)
-					{
-						char* mountPoint = stringUtility::formatString("\\??\\%c:", 'H' + index);
-						STRING sMountPoint = {(USHORT)strlen(mountPoint), (USHORT)strlen(mountPoint) + 1, mountPoint};
-						IoCreateSymbolicLink(&sMountPoint, &DeviceName);
-						free(mountPoint);
-						mMemoryUnityHandles[index] = (char)('H' + index);
-					}
-                }
-			}
 		}
 	}
 
@@ -483,18 +433,6 @@ bool inputManager::buttonPressed(JoystickButton button, int port)
 			return true;
 		}
 		else if (button == JoystickButtonRightTrigger && mRemoteStatesCurrent[i] == XINPUT_IR_REMOTE_RIGHT_TRIGGER && mRemoteStatesPrevious[i] == 0)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-bool inputManager::isMemoryUnitMounted(char letter)
-{
-	for (int i = 0; i < XGetPortCount() * 2; i++)
-	{
-		if (mMemoryUnityHandles[i] == letter)
 		{
 			return true;
 		}

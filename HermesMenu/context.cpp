@@ -1,6 +1,5 @@
 #include "context.h"
 #include "inputManager.h"
-#include "pointerMap.h"
 
 namespace 
 {
@@ -9,8 +8,7 @@ namespace
 	int32_t mBufferHeight;
 	int32_t mBufferPitch;
 	int32_t* mBuffer;
-	pointerMap<image*>* mImageMap = NULL;
-    bitmapFont* mBitmapFontExtraSmall = NULL;
+    std::map<std::string, image*> mImageMap;
 	bitmapFont* mBitmapFontSmall = NULL;
 	bitmapFont* mBitmapFontMedium = NULL;
 	bitmapFont* mBitmapFontLarge = NULL;
@@ -66,24 +64,9 @@ int32_t* context::getBuffer()
 	return mBuffer;
 }
 
-void context::setImageMap(pointerMap<image*>* imageMap)
+std::map<std::string, image*>* context::getImageMap()
 {
-	mImageMap = imageMap;
-}
-
-pointerMap<image*>* context::getImageMap()
-{
-	return mImageMap;
-}
-
-void context::setBitmapFontExtraSmall(bitmapFont* font)
-{
-	mBitmapFontExtraSmall = font;
-}
-
-bitmapFont* context::getBitmapFontExtraSmall()
-{
-	return mBitmapFontExtraSmall;
+	return &mImageMap;
 }
 
 void context::setBitmapFontSmall(bitmapFont* font)

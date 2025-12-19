@@ -1,6 +1,6 @@
 #pragma once
 
-#include "xboxInternals.h"
+#include "External.h"
 #include "utils.h"
 
 class audioPlayer {

@@ -54,6 +54,5 @@ public:
 	static bool buttonPressed(JoystickButton button, int port = -1);
 	static BYTE getLeftTriggerPressure(int port = -1);
 	static BYTE getRightTriggerPressure(int port = -1);
-	static bool isMemoryUnitMounted(char letter);
 	static void setSceneContext(bool inOptionMode);
 };

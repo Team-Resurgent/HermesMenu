@@ -1,9 +1,7 @@
 #include "theme.h"
-#include "fileSystem.h"
 #include "stringUtility.h"
 #include "drawing.h"
 #include "alignment.h"
-#include "pointerVector.h"
 #include "utils.h"
 #include "resources.h"
 
@@ -195,16 +193,6 @@ uint32_t theme::getButtonInactiveHoverTextColor()
 	return mThemeData.BUTTON_INACTIVE_HOVER_TEXT_COLOR;
 }
 
-uint32_t theme::getPanelFillColor()
-{
-	return mThemeData.PANEL_FILL_COLOR;
-}
-
-uint32_t theme::getPanelStrokeColor()
-{
-	return mThemeData.PANEL_STROKE_COLOR;
-}
-
 uint32_t theme::getTextPanelFillColor()
 {
 	return mThemeData.TEXT_PANEL_FILL_COLOR;
@@ -271,9 +259,6 @@ void theme::loadSkin()
 	mThemeData.BUTTON_INACTIVE_HOVER_FILL_COLOR = THEME_BUTTON_INACTIVE_HOVER_FILL_COLOR;
 	mThemeData.BUTTON_INACTIVE_HOVER_STROKE_COLOR = THEME_BUTTON_INACTIVE_HOVER_STROKE_COLOR;
 	mThemeData.BUTTON_INACTIVE_HOVER_TEXT_COLOR = THEME_BUTTON_INACTIVE_HOVER_TEXT_COLOR;
-
-	mThemeData.PANEL_FILL_COLOR = THEME_PANEL_FILL_COLOR;
-	mThemeData.PANEL_STROKE_COLOR = THEME_PANEL_STROKE_COLOR;
 
 	mThemeData.TEXT_PANEL_FILL_COLOR = THEME_TEXT_PANEL_FILL_COLOR;
 	mThemeData.TEXT_PANEL_STROKE_COLOR = THEME_TEXT_PANEL_STROKE_COLOR;

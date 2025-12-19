@@ -9,16 +9,16 @@
 #include "context.h"
 #include "drawing.h"
 #include "inputManager.h"
-#include "xboxinternals.h"
+#include "External.h"
 #include "meshUtility.h"
 #include "utils.h"
 #include "resources.h"
 #include "stringUtility.h"
 #include "theme.h"
 #include "ssfn.h"
-#include "driveManager.h"
-#include "Scenes\sceneManager.h"
 #include "stl_loader.h"
+#include "Structs.h"
+#include "Menu.h"
 
 #include <xgraphics.h>
 
@@ -182,17 +182,15 @@ bool createDevice()
 
 void render_sphere(float angle1, float angle2, float angle3, utils::dataContainer* sphereMesh)
 {
-    const float deg_to_rad = 0.01745329252f;
-
     D3DXMATRIX matWorld;
     D3DXMatrixIdentity(&matWorld);
 
     D3DXMATRIX tmp;
-    D3DXMatrixRotationX(&tmp, angle1 * deg_to_rad);
+    D3DXMatrixRotationX(&tmp, angle1 * DEG_TO_RAD);
     matWorld *= tmp;
-    D3DXMatrixRotationY(&tmp, angle2 * deg_to_rad);
+    D3DXMatrixRotationY(&tmp, angle2 * DEG_TO_RAD);
     matWorld *= tmp;
-    D3DXMatrixRotationZ(&tmp, angle3 * deg_to_rad);
+    D3DXMatrixRotationZ(&tmp, angle3 * DEG_TO_RAD);
     matWorld *= tmp;
 
     D3DXVECTOR3 cameraPosition(0.0f, 0.1f, 9.9f);
@@ -204,7 +202,7 @@ void render_sphere(float angle1, float angle2, float angle3, utils::dataContaine
 
     D3DXMATRIX matProjection;
     D3DXMatrixIdentity(&matProjection);
-    D3DXMatrixPerspectiveFovLH(&matProjection, 45 * deg_to_rad, (float)context::getBufferWidth() / (float)context::getBufferHeight(), 0.1f, 100.0f);
+    D3DXMatrixPerspectiveFovLH(&matProjection, 45 * DEG_TO_RAD, (float)context::getBufferWidth() / (float)context::getBufferHeight(), 0.1f, 100.0f);
    
     context::getD3dDevice()->SetTransform( D3DTS_WORLD, &matWorld);
     context::getD3dDevice()->SetTransform(D3DTS_VIEW, &matView);
@@ -221,20 +219,18 @@ void render_sphere(float angle1, float angle2, float angle3, utils::dataContaine
 
 void render_logo(float angle1, float angle2, float angle3, utils::dataContainer* logoMesh)
 {
-    const float deg_to_rad = 0.01745329252f;
-
     D3DXMATRIX matWorld;
     D3DXMatrixIdentity(&matWorld);
 
     D3DXMATRIX tmp;
-    D3DXMatrixRotationX(&tmp, angle1 * deg_to_rad);
+    D3DXMatrixRotationX(&tmp, angle1 * DEG_TO_RAD);
     matWorld *= tmp;
-    D3DXMatrixRotationY(&tmp, angle2 * deg_to_rad);
+    D3DXMatrixRotationY(&tmp, angle2 * DEG_TO_RAD);
     matWorld *= tmp;
-    D3DXMatrixRotationZ(&tmp, angle3 * deg_to_rad);
+    D3DXMatrixRotationZ(&tmp, angle3 * DEG_TO_RAD);
     matWorld *= tmp;
 
-    D3DXVECTOR3 cameraPosition(0.0f, 0.1f, 9.9f);
+    D3DXVECTOR3 cameraPosition(0.0f, 0.0f, 9.9f);
     D3DXVECTOR3 target(0.0f, 0.0f, 7.0f);
     D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);   
 
@@ -243,22 +239,21 @@ void render_logo(float angle1, float angle2, float angle3, utils::dataContainer*
 
     D3DXMATRIX matProjection;
     D3DXMatrixIdentity(&matProjection);
-    D3DXMatrixPerspectiveFovLH(&matProjection, 45 * deg_to_rad, (float)context::getBufferWidth() / (float)context::getBufferHeight(), 0.1f, 100.0f);
+    D3DXMatrixPerspectiveFovLH(&matProjection, 45 * DEG_TO_RAD, (float)context::getBufferWidth() / (float)context::getBufferHeight(), 0.1f, 100.0f);
    
     context::getD3dDevice()->SetTransform( D3DTS_WORLD, &matWorld);
     context::getD3dDevice()->SetTransform(D3DTS_VIEW, &matView);
     context::getD3dDevice()->SetTransform(D3DTS_PROJECTION, &matProjection);
 
     context::getD3dDevice()->SetRenderState(D3DRS_TEXTUREFACTOR, 0xffff5aff);
-    context::getD3dDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    context::getD3dDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
     context::getD3dDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID); 
 
     image* imageToDraw = drawing::getImage("base");
     context::getD3dDevice()->SetTexture(0, imageToDraw->texture);
 
-    // Render in smaller batches to avoid push-buffer size warnings
     uint32_t totalTriangles = (logoMesh->size / sizeof(meshUtility::vertex)) / 3;
-    uint32_t batchSize = 1000; // Render 1000 triangles per batch
+    uint32_t batchSize = 1000;
     uint32_t vertexSize = sizeof(meshUtility::vertex);
     
     for (uint32_t i = 0; i < totalTriangles; i += batchSize)
@@ -363,22 +358,142 @@ void render_starfield()
     context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
 }
 
+void render_morphing_lines()
+{
+    static float time = 0.0f;
+    time += 0.03f;
+    if (time > 1000.0f) time = 0.0f;
+
+    const int numPoints = 64;
+    const float PI = 3.14159265358979323846f;
+    const float radius = 0.67f; // 3D space radius (2/3 of previous size)
+    const float zDepth = 7.5f; // Position in 3D space (behind logo)
+
+    // Use same camera setup as render_logo
+    D3DXMATRIX matWorld;
+    D3DXMatrixIdentity(&matWorld);
+
+    D3DXVECTOR3 cameraPosition(0.0f, 0.1f, 9.9f);
+    D3DXVECTOR3 target(0.0f, 0.0f, 7.0f);
+    D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);   
+
+    D3DXMATRIX matView;
+    D3DXMatrixLookAtLH(&matView, &cameraPosition, &target, &up);
+
+    D3DXMATRIX matProjection;
+    D3DXMatrixIdentity(&matProjection);
+    D3DXMatrixPerspectiveFovLH(&matProjection, 45 * DEG_TO_RAD, (float)context::getBufferWidth() / (float)context::getBufferHeight(), 0.1f, 100.0f);
+   
+    context::getD3dDevice()->SetTransform(D3DTS_WORLD, &matWorld);
+    context::getD3dDevice()->SetTransform(D3DTS_VIEW, &matView);
+    context::getD3dDevice()->SetTransform(D3DTS_PROJECTION, &matProjection);
+
+    // Setup rendering state for lines (75% opacity = 0xBF alpha)
+    context::getD3dDevice()->SetRenderState(D3DRS_TEXTUREFACTOR, 0xBFFFFFFF);
+    context::getD3dDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    context::getD3dDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+    context::getD3dDevice()->SetTexture(0, NULL);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG2);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+
+    // Create morphing line pattern - blend between different shapes
+    float morphFactor = (sinf(time * 0.5f) + 1.0f) * 0.5f; // 0 to 1
+
+    // Create vertex buffer for line strip in 3D space
+    meshUtility::vertex* lineVertices = (meshUtility::vertex*)malloc(numPoints * sizeof(meshUtility::vertex));
+    
+    for (int i = 0; i < numPoints; i++) {
+        float angle = (2.0f * PI * i) / numPoints;
+        
+        // Morph between circle and star/rose pattern
+        float radius1 = radius; // Circle
+        float radius2 = radius * (0.5f + 0.5f * sinf(angle * 5.0f + time)); // Star/rose
+        
+        float r = radius1 * (1.0f - morphFactor) + radius2 * morphFactor;
+        
+        // Add wave distortion
+        float wave = sinf(angle * 3.0f + time * 2.0f) * 0.2f;
+        r += wave * morphFactor;
+        
+        // 3D coordinates in XY plane at zDepth
+        float x = r * cosf(angle + time * 0.3f);
+        float y = r * sinf(angle + time * 0.3f);
+        float z = zDepth;
+        
+        lineVertices[i] = meshUtility::vertex(x, y, z, 0.0f, 0.0f);
+    }
+
+    // Draw as line strip (closed loop - connects last point to first)
+    // Add first point at the end to close the loop
+    meshUtility::vertex closedLine[numPoints + 1];
+    memcpy(closedLine, lineVertices, numPoints * sizeof(meshUtility::vertex));
+    closedLine[numPoints] = lineVertices[0]; // Connect back to start
+    
+    context::getD3dDevice()->DrawPrimitiveUP(
+        D3DPT_LINESTRIP,
+        numPoints, // numPoints segments to close the loop
+        closedLine,
+        sizeof(meshUtility::vertex)
+    );
+    
+    // Draw connecting lines to create mesh effect
+    for (int i = 0; i < numPoints; i += 4) {
+        int next = (i + numPoints / 4) % numPoints;
+        meshUtility::vertex lineSeg[2];
+        lineSeg[0] = lineVertices[i];
+        lineSeg[1] = lineVertices[next];
+        
+        context::getD3dDevice()->DrawPrimitiveUP(
+            D3DPT_LINELIST,
+            1,
+            lineSeg,
+            sizeof(meshUtility::vertex)
+        );
+    }
+
+    free(lineVertices);
+    
+    // Restore texture stage state
+    context::getD3dDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+    context::getD3dDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+}
+
 void __cdecl main()
 {
-	utils::debugPrint("Welcome to Cerbios Recovery\n");
+	utils::debugPrint("Welcome to Hermes Menu\n");
+
+    std::string mountPath = "";
+
+    DWORD dwLaunchDataType = 0;
+    LAUNCH_DATA launchData;
+    if ((ERROR_SUCCESS == XGetLaunchInfo(&dwLaunchDataType, &launchData)) && (LDT_TITLE == dwLaunchDataType))
+    {
+        CUSTOM_LAUNCH_ISO_DATA* customLaunchData = (CUSTOM_LAUNCH_ISO_DATA*)&launchData;
+        if (customLaunchData->magic == CUSTOM_LAUNCH_ISO_MAGIC)
+        {
+            mountPath = std::string(customLaunchData->mountPath);
+        }
+    }
+    else
+    {
+        mountPath = "\\Device\\Harddisk0\\Partition1\\Devkit\\Hermes";
+	    //HalReturnToFirmware(2);
+    }
+
 
 	bool deviceCreated = createDevice();
-
-	driveManager::mountDrive("HDD0-C");
-	driveManager::mountDrive("HDD0-E");
 	
-	context::setImageMap(new pointerMap<image*>(true));
 	theme::loadSkin();
 
 	drawing::loadFont(&font_sfn[0]);
 
-    bitmapFont* fontExtraSmall = drawing::generateBitmapFont("FreeSans", SSFN_STYLE_REGULAR, 16, 16, 0, 256);
-	context::setBitmapFontExtraSmall(fontExtraSmall);
 	bitmapFont* fontSmall = drawing::generateBitmapFont("FreeSans", SSFN_STYLE_REGULAR, 18, 18, 0, 256);
 	context::setBitmapFontSmall(fontSmall);
 	bitmapFont* fontMedium = drawing::generateBitmapFont("FreeSans", SSFN_STYLE_REGULAR, 25, 25, 0, 256);
@@ -391,15 +506,21 @@ void __cdecl main()
 
     utils::dataContainer* sphereMesh = meshUtility::createSphere();
     utils::dataContainer* logoMesh = stl_loader::loadFromBinary(logo_stl, logo_stl_len);
-    drawing::loadImage((char*)base_jpg, sizeof(base_jpg), "base");
+    drawing::loadImage(base_jpg, sizeof(base_jpg), "base");
 
     audioPlayer::init();
 
-    sceneManager::pushScene(sceneItemMainScene);
-    
+    Menu* menu = new Menu();
+    bool trainerLoaded = menu->LoadTrainer(mountPath);
+    if (trainerLoaded == false)
+    {
+        HalReturnToFirmware(2);
+    }
+
     float angle1 = 0;
     float angle2 = 0;
     float angle3 = 0;
+    float angle4 = 0;
     while (TRUE)
     {
 		inputManager::processController();
@@ -408,10 +529,15 @@ void __cdecl main()
 
         // Render Sphere Background
 
-        render_sphere(-angle1, -angle2, -angle3, sphereMesh); 
-        render_logo(0.0f, angle3, 0.0f, logoMesh);
-
-	    // Setup Ortho Camera 
+        render_sphere(-angle1, -angle2, -angle3, sphereMesh);
+        
+        // Render Morphing Lines in 3D space (behind logo)
+        render_morphing_lines();
+        
+        // Render Logo on top
+        render_logo(0.0f, (sin(angle4 * DEG_TO_RAD) * 20) + 180.0f, 0.0f, logoMesh);
+        
+	    // Setup Ortho Camera for 2D effects
 
         D3DXMATRIX matIdentity;
         D3DXMatrixIdentity(&matIdentity);
@@ -425,13 +551,13 @@ void __cdecl main()
         context::getD3dDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
         context::getD3dDevice()->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 
-        // Render Retro Starfield Effect
+        // Render Starfield in 2D
         render_starfield();
 
         // Process Input / Render Menu
 
-        sceneManager::getScene()->update();
-        sceneManager::getScene()->render();
+        menu->Update();
+        menu->Render();
 
         // Present Rendered Results
 
@@ -454,6 +580,12 @@ void __cdecl main()
         if (angle3 > 360.0f)
         {
             angle3 -= 360.f;
+        }
+
+        angle4 += 2.0f;
+        if (angle4 > 360.0f)
+        {
+            angle4 -= 360.f;
         }
     }
 }

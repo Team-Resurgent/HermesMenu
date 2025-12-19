@@ -1,6 +1,6 @@
 #pragma once
 
-#include "xboxinternals.h"
+#include "External.h"
 #include <string>
 
 class utils
@@ -9,22 +9,17 @@ public:
 
     typedef struct textContainer 
 	{
-		char* message;
+        std::string message;
 		uint32_t width;
         uint32_t height;
 
-		textContainer() : message(NULL), width(0), height(0) {}
+		textContainer() : message(""), width(0), height(0) {}
 
-		textContainer(const char* message, uint32_t width, uint32_t height)
+		textContainer(std::string message, uint32_t width, uint32_t height)
 		{
-			this->message = strdup(message);
+			this->message = message;
 			this->width = width; 
             this->height = height; 
-		}
-
-		~textContainer()
-		{
-			free(this->message);
 		}
 
 	} textContainer;
@@ -67,29 +62,8 @@ public:
 
 	} intContainer;
 
-	static void hexDumpDebug(void* data, uint32_t size);
-	static char* hexDump(void* data, uint32_t size);
-	static void uSleep(uint64_t timeout);
-	static void byteSwap16(uint8_t* buf, uint32_t size);
-	static void debugPrint(const char* format, ...);
+	static void debugPrint(std::string format, ...);
 	static void* mallocWithTerminator(uint32_t size);
 	static void* mallocCopyWithTerminator(void* source, uint32_t size, uint32_t copySize);
-	static void reboot();
-	static void ReturnToDashboard();
-	static void shutdown();
-	static uint32_t getFreePhysicalMemory();
-	static uint32_t getTotalPhysicalMemory();
-
-	static uint8_t ioInputByte(uint16_t port);
-	static uint16_t ioInputShort(uint16_t port);
-	static uint32_t ioInputInt(uint16_t port);
-	static void ioOutputByte(uint16_t port, uint8_t value);
-	static void ioOutputShort(uint16_t port, uint16_t value);
-	static void ioOutputInt(uint16_t port, uint32_t value);
-	static void setLedStates(uint32_t ledStates);
 	static uint32_t roundUpToNextPowerOf2(uint32_t value);
-	static void sleepMicroSecs(LARGE_INTEGER clockFreq, uint16_t microSecs);
-	static void swapString(char** oldValue, const char* newValue);
-	static void freeString(char** value);
-	static USHORT WINAPI FindFirstSetRightMember(ULONG Set);
 };

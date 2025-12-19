@@ -3,10 +3,10 @@
 #include "math.h"
 #include "utils.h"
 #include "meshUtility.h"
-#include "stringUtility.h"
+#include "StringUtility.h"
 #include "theme.h"
-#include "pointerMap.h"
 
+#include <map>
 #include <xgraphics.h>
 
 #define SSFN_IMPLEMENTATION
@@ -127,32 +127,14 @@ image* drawing::createImage(uint8_t* imageData, D3DFORMAT format, int width, int
 	return imageToAdd;
 }
 
-void drawing::addImage(const char* key, uint8_t* imageData, D3DFORMAT format, int width, int height)
+void drawing::addImage(std::string key, uint8_t* imageData, D3DFORMAT format, int width, int height)
 {
 	image* imageToAdd = createImage(imageData, format, width, height);
-	context::getImageMap()->add(key, imageToAdd);
+    std::map<std::string, image*>* map = context::getImageMap();
+	(*map)[key] = imageToAdd;
 }
 
-uint64_t drawing::getImageMemUse(const char* key)
-{
-	image* imageInfo = context::getImageMap()->get(key);
-	if (imageInfo == NULL)
-	{
-		return 0;
-	}
-	return utils::roundUpToNextPowerOf2(imageInfo->width) * utils::roundUpToNextPowerOf2(imageInfo->height) * 4;
-}
-
-void drawing::removeImage(const char* key)
-{
-	image* imageToRemove = context::getImageMap()->get(key);
-	if (imageToRemove != NULL)
-	{
-		context::getImageMap()->removeKey(key);
-	}
-}
-
-bool drawing::loadImage(const char* buffer, uint32_t length, const char* key)
+bool drawing::loadImage(const uint8_t* buffer, uint32_t length, std::string key)
 {
 	int width;
 	int height;
@@ -184,16 +166,16 @@ void drawing::clearBackground(uint32_t index)
 	context::getD3dDevice()->Clear(0L, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, (0xff << 24) | backgroundColor, 1.0f, 0L);
 }
 
-bool drawing::imageExists(const char* key)
+bool drawing::imageExists(std::string key)
 {
-	image* result = context::getImageMap()->get(key);
-    return result != NULL;
+    std::map<std::string, image*>* map = context::getImageMap();
+    return map->find(key) != map->end();
 }
 
-image* drawing::getImage(const char* key)
+image* drawing::getImage(std::string key)
 {
-	image* result = context::getImageMap()->get(key);
-    return result;
+    std::map<std::string, image*>* map = context::getImageMap();
+	return (*map)[key];
 }
 
 void drawing::setTint(unsigned int color)
@@ -226,7 +208,7 @@ void drawing::drawImage(image* image, uint32_t tint, int x, int y)
 	drawImage(image, tint, x, y, image->width, image->height);
 }
 
-void drawing::drawImage(const char* imageKey, uint32_t tint, int x, int y, int width, int height)
+void drawing::drawImage(std::string imageKey, uint32_t tint, int x, int y, int width, int height)
 {
 	image* imageToDraw = getImage(imageKey);
 	if (imageToDraw == NULL)
@@ -236,7 +218,7 @@ void drawing::drawImage(const char* imageKey, uint32_t tint, int x, int y, int w
 	drawImage(imageToDraw, tint, x, y, width, height);
 }
 
-void drawing::drawImage(const char* imageKey, uint32_t tint, int x, int y)
+void drawing::drawImage(std::string imageKey, uint32_t tint, int x, int y)
 {
 	image* imageToDraw = getImage(imageKey);
 	if (imageToDraw == NULL)
@@ -246,7 +228,7 @@ void drawing::drawImage(const char* imageKey, uint32_t tint, int x, int y)
 	drawImage(imageToDraw, tint, x, y);
 }
 
-void drawing::drawNinePatch(const char* imageKey, uint32_t tint, int x, int y, int width, int height)
+void drawing::drawNinePatch(std::string imageKey, uint32_t tint, int x, int y, int width, int height)
 {
 	image* imageToDraw = getImage(imageKey);
 	if (imageToDraw == NULL)
@@ -261,7 +243,7 @@ void drawing::drawNinePatch(const char* imageKey, uint32_t tint, int x, int y, i
 	delete(vertices);
 }
 
-image* drawing::renderHorizontalLine(const char* cacheKey, unsigned int color, int width, int height)
+image* drawing::renderHorizontalLine(std::string cacheKey, unsigned int color, int width, int height)
 {
 	if (imageExists(cacheKey) == false)
 	{
@@ -276,7 +258,7 @@ image* drawing::renderHorizontalLine(const char* cacheKey, unsigned int color, i
 	return getImage(cacheKey);
 }
 
-image* drawing::renderRoundedRect(const char* cacheKey, uint32_t width, uint32_t height, uint32_t cornerRadius, uint32_t fillColor, uint32_t strokeColor, uint32_t strokeWidth)
+image* drawing::renderRoundedRect(std::string cacheKey, uint32_t width, uint32_t height, uint32_t cornerRadius, uint32_t fillColor, uint32_t strokeColor, uint32_t strokeWidth)
 {
 	if (imageExists(cacheKey) == false)
 	{
@@ -360,90 +342,16 @@ image* drawing::renderRoundedRect(const char* cacheKey, uint32_t width, uint32_t
 
 void drawing::drawHorizontalLine(uint32_t color, int x, int y, int width, int height)
 {
-	char* cacheKey = stringUtility::formatString("drawHorizontalLine-%02x-%02x", width, height);
+	std::string cacheKey = StringUtility::FormatString("drawHorizontalLine-%02x-%02x", width, height).c_str();
 	image* image = renderHorizontalLine(cacheKey, color, width, height);
 	drawImage(image, color, x, y);
-	free(cacheKey);
 }
-//
-//void drawing::measureString(const char* fontName, int fontStyle, int fontSize, const char* message, int* width, int* height)
-//{
-//	ssfn_select(mFontContext, SSFN_FAMILY_ANY, fontName, fontStyle, fontSize);
-//	ssfn_bbox(mFontContext, message, width, height, NULL, NULL);
-//}
-//
-//image* drawing::renderString(const char* cacheKey, Bounds bounds, const char* message, uint32_t color)
-//{
-//	if (imageExists(cacheKey) == false)
-//	{
-//		int ret;
-//
-//		uint32_t* imageData = (uint32_t*)malloc(bounds.width * bounds.height * 4);
-//		memset(imageData, 0, bounds.width * bounds.height * 4);
-//
-//		ssfn_buf_t buffer; 
-//		memset(&buffer, 0, sizeof(buffer));
-//		buffer.ptr = (uint8_t*)imageData;       
-//		buffer.x = bounds.left;
-//		buffer.y = bounds.top;
-//		buffer.w = bounds.width;                        
-//		buffer.h = bounds.height;                     
-//		buffer.p = bounds.width * 4;                          
-//		buffer.bg = color;
-//		buffer.fg = color;           
-//
-//		const char *text = message;
-//
-//		while((ret = ssfn_render(mFontContext, &buffer, text)) > 0)
-//		{
-//			text += ret;
-//		}
-//
-//		addImage(cacheKey, (uint8_t*)imageData, D3DFMT_A8R8G8B8, bounds.width, bounds.height);
-//		free(imageData);
-//	}
-//	return getImage(cacheKey);
-//}
-//
-//void drawing::drawString(const char* fontName, int fontStyle, int fontSize, const char* message, uint32_t color, int x, int y)
-//{
-//	ssfn_select(mFontContext, SSFN_FAMILY_ANY, fontName, fontStyle, fontSize);
-//
-//	Bounds bounds;
-//	ssfn_bbox(mFontContext, message, &bounds.width, &bounds.height, &bounds.left, &bounds.top);
-//
-//	char* cacheKey = stringUtility::formatString("drawString-%s-%02x-%02x-%s-%08x-%08x", fontName, fontStyle, fontSize, message, color);
-//	image* image = renderString(cacheKey, bounds, message, color);
-//	drawImage(image, 0xffffffff, x, y);
-//	free(cacheKey);
-//}
-//
-//void drawing::drawStringAligned(const char* fontName, int fontStyle, int fontSize, const char*  message, uint32_t color, horizAlignment hAlign, int x, int y, int width)
-//{
-//	ssfn_select(mFontContext, SSFN_FAMILY_ANY, fontName, fontStyle, fontSize);
-//
-//	int textWidth = 0;
-//	measureString(fontName, fontStyle, fontSize, message, &textWidth, NULL);
-//
-//	int xPos = x;
-//	if (hAlign == horizAlignmentCenter)
-//	{
-//		xPos = x + ((width - textWidth) / 2);
-//	}
-//	else if (hAlign == horizAlignmentRight)
-//	{
-//		xPos = x + (width - textWidth);
-//	}
-//
-//	drawString(fontName, fontStyle, fontSize, message, color, xPos, y);
-//}
 
-bitmapFont* drawing::generateBitmapFont(const char* fontName, int fontStyle, int fontSize, int lineHeight, int spacing, int textureDimension)
+bitmapFont* drawing::generateBitmapFont(std::string fontName, int fontStyle, int fontSize, int lineHeight, int spacing, int textureDimension)
 {
 	bitmapFont* font = new bitmapFont();
-	font->charMap = new pointerMap<math::rectI*>(true);
 
-	ssfn_select(mFontContext, SSFN_FAMILY_ANY, fontName, fontStyle, fontSize);
+	ssfn_select(mFontContext, SSFN_FAMILY_ANY, fontName.c_str(), fontStyle, fontSize);
 
 	int textureWidth = textureDimension;
 	int textureHeight = textureDimension; 
@@ -481,15 +389,12 @@ bitmapFont* drawing::generateBitmapFont(const char* fontName, int fontStyle, int
 			y = y + bounds.height + 2;
 		}
 
-		math::rectI* rect = new math::rectI();
+        std::string unicodeString = StringUtility::FormatString("%i", unicode);
+		math::rectI* rect = &font->charMap[unicodeString];
 		rect->x = x;
 		rect->y = y;
 		rect->width = bounds.width;
 		rect->height = bounds.height;
-
-		char* unicodeString = stringUtility::formatString("%i", unicode);
-		font->charMap->add(unicodeString, rect);
-		free(unicodeString);
 
 		ssfn_buf_t buffer; 
 		memset(&buffer, 0, sizeof(buffer));
@@ -516,233 +421,141 @@ bitmapFont* drawing::generateBitmapFont(const char* fontName, int fontStyle, int
 	return font;
 }
 
-void drawing::measureBitmapString(bitmapFont* font, const char* message, int* width, int* height)
+void drawing::measureBitmapString(
+    bitmapFont* font,
+    std::string message,
+    int* width,
+    int* height)
 {
-	image* image = font->image;
+    image* image = font->image;
 
-	int xPosMax = 0;
+    int xPosMax = 0;
+    int xPos = 0;
+    int yPos = 0;
 
-	int xPos = 0;
-	int yPos = 0;
+    const char* currentCharPos = message.c_str();
 
-	char* currentCharPos = (char*)message;
-	while(*currentCharPos)
-	{	
-		char* nextCharPos = currentCharPos;
-		uint32_t unicode = ssfn_utf8(&nextCharPos);
-
-		int32_t length = nextCharPos - currentCharPos;
-		char* currentChar = (char*)malloc(length + 1);
-		memcpy(currentChar, currentCharPos, length);
-		currentChar[length] = 0;
-
-		currentCharPos = nextCharPos;
-
-		if (stringUtility::equals(currentChar, "\n", false) == true)
-		{
-			xPos = 0;
-			yPos += font->lineHeight;
-			continue;
-		}
-
-		char* unicodeString = stringUtility::formatString("%i", unicode);
-		math::rectI* rect = font->charMap->get(unicodeString);
-		free(unicodeString);
-		if (rect == NULL)
-		{
-			continue;
-		}
-
-		xPos = xPos + rect->width + font->spacing;
-		xPosMax = max(xPosMax, xPos);
-		free(currentChar);
-	}
-
-	if (width != NULL)
-	{
-		*width = xPosMax - 2;
-	}
-
-	if (height != NULL)
-	{
-		*height = yPos + font->lineHeight;
-	}
-}
-
-pointerVector<utils::textContainer*>* drawing::wordWrapString(bitmapFont* font, const char* message, int maxWidth)
-{
-    pointerVector<utils::textContainer*>* result = new pointerVector<utils::textContainer*>(true);
-
-    const int MAX_LINE_WIDTH = 256;
-    const int MAX_WORD_LEN = 128;
-
-    char word_buffer[MAX_WORD_LEN];
-    int word_length = 0;
-
-    char current_line[MAX_LINE_WIDTH] = {0};
-    int current_line_length = 0;
-
-    int start_index = 0;
-    int end_index = strlen(message);
-
-    for (int index = start_index; index <= end_index; ++index) 
+    while (*currentCharPos)
     {
-        char current_char = message[index];
-        bool is_end_of_input = (index == end_index);
-        bool is_word_delimiter = (current_char == ' ' || current_char == '\n' || is_end_of_input);
+        const char* nextCharPos = currentCharPos;
+        uint32_t unicode = ssfn_utf8((char**)&nextCharPos);
 
-        if (!is_word_delimiter) 
+        int32_t length = static_cast<int32_t>(nextCharPos - currentCharPos);
+
+        // Advance cursor early
+        currentCharPos = nextCharPos;
+
+        // Handle newline (ASCII only, same behavior as original)
+        if (length == 1 && unicode == '\n')
         {
-            if (word_length < MAX_WORD_LEN - 1) {
-                word_buffer[word_length++] = current_char;
-            }
+            xPos = 0;
+            yPos += font->lineHeight;
+            continue;
         }
-        if (is_word_delimiter || is_end_of_input) 
-        {
-            word_buffer[word_length] = '\0';
-            if (word_length > 0) 
-            {
-                char* test_line = NULL;
-                if (current_line_length > 0) 
-                {
-                    test_line = stringUtility::formatString("%s %s", current_line, word_buffer);   
-                } 
-                else 
-                {
-                    test_line = strdup(word_buffer);
-                }
-                int textWidth;
-	            int textHeight;
-                measureBitmapString(context::getBitmapFontSmall(), test_line, &textWidth, &textHeight);
-                if (textWidth <= maxWidth) 
-                {
-                    strcpy(current_line, test_line);
-                    current_line_length = strlen(current_line);
-                } 
-                else 
-                {
-                    utils::textContainer* line = new utils::textContainer(current_line, textWidth, textHeight);
-                    result->add(line);
-                    strcpy(current_line, word_buffer);
-                    current_line_length = strlen(current_line);
-                }
-                word_length = 0;
-                free(test_line);
-            }
-            if (current_char == '\n') 
-            {
-                if (current_line_length > 0) 
-                {
-                    int textWidth;
-	                int textHeight;
-                    measureBitmapString(context::getBitmapFontSmall(), current_line, &textWidth, &textHeight);
-                    utils::textContainer* line = new utils::textContainer(current_line, textWidth, textHeight);
-                    result->add(line);
-                    current_line[0] = '\0';
-                    current_line_length = 0;
-                }
-                if (index + 1 < end_index && message[index + 1] == '\n') 
-                {
-                    ++index; 
-                    utils::textContainer* line = new utils::textContainer(strdup(""), 0, font->lineHeight);
-                    result->add(line);
-                }
-            }
-            if (is_end_of_input && current_line_length > 0) 
-            {
-                int textWidth;
-	            int textHeight;
-                measureBitmapString(context::getBitmapFontSmall(), current_line, &textWidth, &textHeight);
-                utils::textContainer* line = new utils::textContainer(current_line, textWidth, textHeight);
-                result->add(line);
-                current_line[0] = '\0';
-                current_line_length = 0;
-            }
-        }
+
+        std::string unicodeString = StringUtility::FormatString("%i", unicode);
+
+        std::map<std::string, math::rectI>::iterator it = font->charMap.find(unicodeString);
+        if (it == font->charMap.end())
+            continue;
+
+        math::rectI* rect = &it->second;
+
+        xPos += rect->width + font->spacing;
+        xPosMax = max(xPosMax, xPos);
     }
-    return result;
+
+    if (width)
+        *width = xPosMax - 2;
+
+    if (height)
+        *height = yPos + font->lineHeight;
 }
 
-void drawing::drawBitmapString(bitmapFont* font, const char* message, uint32_t color, int x, int y)
+void drawing::drawBitmapString(bitmapFont* font, std::string message, uint32_t color, int x, int y)
 {
-	image* image = font->image;
+    image* image = font->image;
 
-	int xPos = x;
-	int yPos = y;
+    int xPos = x;
+    int yPos = y;
 
-	char* currentCharPos = (char*)message;
-	while(*currentCharPos)
-	{	
-		char* nextCharPos = currentCharPos;
-		uint32_t unicode = ssfn_utf8(&nextCharPos);
+    const char* currentCharPos = message.c_str();
 
-		int32_t length = nextCharPos - currentCharPos;
-		char* currentChar = (char*)malloc(length + 1);
-		memcpy(currentChar, currentCharPos, length);
-		currentChar[length] = 0;
+    while (*currentCharPos)
+    {
+        const char* nextCharPos = currentCharPos;
+        uint32_t unicode = ssfn_utf8((char**)&nextCharPos);
 
-		currentCharPos = nextCharPos;
+        int32_t length = static_cast<int32_t>(nextCharPos - currentCharPos);
+        currentCharPos = nextCharPos;
 
-		if (stringUtility::equals(currentChar, "\n", false) == true)
-		{
-			xPos = x;
-			yPos += font->lineHeight;
-			continue;
-		}
+        // Newline handling
+        if (length == 1 && unicode == '\n')
+        {
+            xPos = x;
+            yPos += font->lineHeight;
+            continue;
+        }
 
-		char* unicodeString = stringUtility::formatString("%i", unicode);
-		math::rectI* rect = font->charMap->get(unicodeString);
-		free(unicodeString);
-		if (rect == NULL)
-		{
-			continue;
-		}
+        // Lookup glyph (SAFE: no insertion)
+        std::string unicodeString = StringUtility::FormatString("%i", unicode);
+        std::map<std::string, math::rectI>::iterator it = font->charMap.find(unicodeString);
+        if (it == font->charMap.end())
+            continue;
 
-		math::rectF uvRect;
-		uvRect.x = rect->x / (float)image->width;
-		uvRect.y = rect->y / (float)image->height;
-		uvRect.width = rect->width / (float)image->width;
-		uvRect.height = rect->height / (float)image->height;
+        const math::rectI& rect = it->second;
 
-		uint32_t charColor = color;
-		if (unicode == 161)
-		{
-			charColor = theme::getJoyButtonAColor();
-		}
-		else if (unicode == 162)
-		{
-			charColor = theme::getJoyButtonBColor();
-		}
-		else if (unicode == 163)
-		{
-			charColor = theme::getJoyButtonXColor();
-		}
-		else if (unicode == 164)
-		{
-			charColor = theme::getJoyButtonYColor();
-		}
-		else if (unicode == 182)
-		{
-			charColor = theme::getJoyButtonBlackColor();
-		}
-			else if (unicode == 181)
-		{
-			charColor = theme::getJoyButtonWhiteColor();
-		}
+        // Build UVs
+        math::rectF uvRect;
+        uvRect.x      = rect.x / static_cast<float>(image->width);
+        uvRect.y      = rect.y / static_cast<float>(image->height);
+        uvRect.width  = rect.width  / static_cast<float>(image->width);
+        uvRect.height = rect.height / static_cast<float>(image->height);
 
-		context::getD3dDevice()->SetRenderState(D3DRS_TEXTUREFACTOR, charColor);
-		float newY = (float)context::getBufferHeight() - (yPos + rect->height);
-		context::getD3dDevice()->SetTexture(0, image->texture);
-		utils::dataContainer* vertices = meshUtility::createQuadXY(math::vec3F((float)xPos - 0.5f, newY - 0.5f, 0), math::sizeF((float)rect->width, (float)rect->height), uvRect);
-		context::getD3dDevice()->DrawPrimitiveUP(D3DPT_TRIANGLELIST, (vertices->size / sizeof(meshUtility::vertex)) / 3, vertices->data, sizeof(meshUtility::vertex));
-		delete(vertices);
+        // Per-character color overrides
+        uint32_t charColor = color;
+        switch (unicode)
+        {
+            case 161: charColor = theme::getJoyButtonAColor(); break;
+            case 162: charColor = theme::getJoyButtonBColor(); break;
+            case 163: charColor = theme::getJoyButtonXColor(); break;
+            case 164: charColor = theme::getJoyButtonYColor(); break;
+            case 182: charColor = theme::getJoyButtonBlackColor(); break;
+            case 181: charColor = theme::getJoyButtonWhiteColor(); break;
+        }
 
-		xPos = xPos + rect->width + font->spacing;
-		free(currentChar);
-	}
+        context::getD3dDevice()->SetRenderState(D3DRS_TEXTUREFACTOR, charColor);
+
+        float newY = static_cast<float>(context::getBufferHeight())
+                   - (yPos + rect.height);
+
+        context::getD3dDevice()->SetTexture(0, image->texture);
+
+        utils::dataContainer* vertices =
+            meshUtility::createQuadXY(
+                math::vec3F(
+                    static_cast<float>(xPos) - 0.5f,
+                    newY - 0.5f,
+                    0.0f),
+                math::sizeF(
+                    static_cast<float>(rect.width),
+                    static_cast<float>(rect.height)),
+                uvRect);
+
+        context::getD3dDevice()->DrawPrimitiveUP(
+            D3DPT_TRIANGLELIST,
+            (vertices->size / sizeof(meshUtility::vertex)) / 3,
+            vertices->data,
+            sizeof(meshUtility::vertex));
+
+        delete vertices;
+
+        xPos += rect.width + font->spacing;
+    }
 }
 
-void drawing::drawBitmapStringAligned(bitmapFont* font, const char*  message, uint32_t color, horizAlignment hAlign, int x, int y, int width)
+
+void drawing::drawBitmapStringAligned(bitmapFont* font, std::string  message, uint32_t color, horizAlignment hAlign, int x, int y, int width)
 {
 	int textWidth = 0;
 	measureBitmapString(font, message, &textWidth, NULL);
