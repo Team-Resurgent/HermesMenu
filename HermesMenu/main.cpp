@@ -483,8 +483,8 @@ void __cdecl main()
     }
     else
     {
-        mountPath = "\\Device\\Harddisk0\\Partition1\\Devkit\\Hermes";
-	    //HalReturnToFirmware(2);
+        //mountPath = "\\Device\\Harddisk0\\Partition1\\Devkit\\Hermes";
+	    HalReturnToFirmware(2);
     }
 
 
